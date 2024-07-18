@@ -1,0 +1,40 @@
+{
+  "name": "Better Feed",
+  "version": "1.0",
+  "description": "LinkedIn Better Feed",
+  "host_permissions": [
+    "https://www.linkedin.com/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": [
+        "https://www.linkedin.com/feed/*"
+      ],
+      "run_at": "document_idle",
+      "js": [
+        "main.js"
+      ]
+    }
+  ],
+  "action": {
+    "default_icon": {
+      "16": "img/get_started16.png",
+      "32": "img/get_started32.png",
+      "48": "img/get_started48.png",
+      "128": "img/get_started128.png"
+    }
+  },
+  "icons": {
+    "16": "img/get_started16.png",
+    "32": "img/get_started32.png",
+    "48": "img/get_started48.png",
+    "128": "img/get_started128.png"
+  },
+  "manifest_version": 3,
+  "web_accessible_resources": [
+    {
+      "resources": ["/img/*"],
+      "matches": ["https://www.linkedin.com/*"]
+    }
+  ]
+}
