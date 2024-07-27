@@ -35,6 +35,62 @@ function waitForElement(selector, callback, maxWaitTime = 10000) {
     }
 }
 
+function displayFeedInfo(feedInfoList) {
+    // Create or get the display container
+    let displayContainer = document.getElementById('linkedin-feed-info');
+    if (!displayContainer) {
+        displayContainer = document.createElement('div');
+        displayContainer.id = 'linkedin-feed-info';
+        displayContainer.style.cssText = `
+            position: fixed;
+            top: 100px;
+            right: 10px;
+            background-color: black;
+            border: 1px solid #ccc;
+            padding: 10px;
+            z-index: 9999;
+            max-height: 80vh;
+            overflow-y: auto;
+        `;
+        document.body.appendChild(displayContainer);
+    }
+
+    // Count feed types
+    let typeCounts = {};
+    feedInfoList.forEach(feedInfo => {
+        typeCounts[feedInfo.type] = (typeCounts[feedInfo.type] || 0) + 1;
+    });
+
+    // Create the HTML content
+    let html = '<h3>LinkedIn Feed Info</h3>';
+    html += '<h4>Feed Type Counts:</h4>';
+    html += '<ul>';
+    for (let type in typeCounts) {
+        let typeName = getFeedTypeName(parseInt(type));
+        html += `<li>${typeName}: ${typeCounts[type]}</li>`;
+    }
+    html += '</ul>';
+    html += `<p>Total feed items: ${feedInfoList.length}</p>`;
+
+    // Update the display container
+    displayContainer.innerHTML = html;
+}
+
+function getFeedTypeName(type) {
+    switch (type) {
+        case FEED_TYPE_JOB_POST: return 'Job Post';
+        case FEED_TYPE_COURSE_POST: return 'Course Post';
+        case FEED_TYPE_ACTIVITY_POST: return 'Activity Post';
+        case FEED_TYPE_ACTIVITY_POST_SHARE: return 'Shared Post';
+        case FEED_TYPE_ACTIVITY_MUTUAL_CONNECTIONS: return 'Mutual Connections';
+        case FEED_TYPE_ACTIVITY_POST_REACTION: return 'Post Reaction';
+        case FEED_TYPE_ACTIVITY_POST_COMMENT: return 'Post Comment';
+        case FEED_TYPE_ACTIVITY_ANNIVERSARY: return 'Anniversary';
+        case FEED_TYPE_SITE_PROMOTION: return 'Promoted Content';
+        default: return 'Unknown';
+    }
+}
+
 function init() {
     console.log('init');
     waitForElement('.feed-shared-update-v2', () => {
@@ -44,6 +100,9 @@ function init() {
             return;
         }
         console.log(`Found ${feeds.length} feed items`);
+        
+        let feedInfoList = [];
+
         // Loop through all feed elements and check the type
         feeds.forEach((feed, index) => {
             let feedInfo = {
@@ -104,9 +163,12 @@ function init() {
                 feedInfo['type'] = FEED_TYPE_ACTIVITY_POST;
             }
 
+            feedInfoList.push(feedInfo);
             console.log(`Feed item ${index}:`, feedInfo);
-            console.log(`HTML:`, feed.outerHTML.slice(0, 200) + '...'); // Log a snippet of the HTML for debugging
         });
+
+        // Display the feed info on the UI
+        displayFeedInfo(feedInfoList);
     });
 }
 
