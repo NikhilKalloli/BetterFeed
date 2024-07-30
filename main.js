@@ -43,14 +43,16 @@ function displayFeedInfo(feedInfoList) {
         displayContainer.id = 'linkedin-feed-info';
         displayContainer.style.cssText = `
             position: fixed;
-            top: 100px;
-            right: 10px;
-            background-color: black;
+            top: 300px;
+            right: 193px;
+            background-color: white;
             border: 1px solid #ccc;
             padding: 10px;
             z-index: 9999;
             max-height: 80vh;
             overflow-y: auto;
+            width: 300px;
+            
         `;
         document.body.appendChild(displayContainer);
     }
@@ -62,15 +64,35 @@ function displayFeedInfo(feedInfoList) {
     });
 
     // Create the HTML content
-    let html = '<h3>LinkedIn Feed Info</h3>';
-    html += '<h4>Feed Type Counts:</h4>';
-    html += '<ul>';
+    let html = `
+        <style>
+            #linkedin-feed-info, #linkedin-feed-info * {
+                color: black !important;
+            }
+            #linkedin-feed-info h3, #linkedin-feed-info h4 {
+                color: black !important;
+                margin-bottom: 10px;
+            }
+            #linkedin-feed-info form div {
+                margin-bottom: 5px;
+            }
+        </style>
+        <form>
+    `;
+    html += `
+    </form>
+    <p>All ${feedInfoList.length}</p>
+    `;
     for (let type in typeCounts) {
         let typeName = getFeedTypeName(parseInt(type));
-        html += `<li>${typeName}: ${typeCounts[type]}</li>`;
+        html += `
+            <div>        
+                <input type="checkbox" id="type-${type}" name="type-${type}" checked>
+                <label for="type-${type}">${typeName}: ${typeCounts[type]}</label>
+            </div>
+        `;
     }
-    html += '</ul>';
-    html += `<p>Total feed items: ${feedInfoList.length}</p>`;
+    
 
     // Update the display container
     displayContainer.innerHTML = html;
