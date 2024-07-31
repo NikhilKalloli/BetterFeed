@@ -8,10 +8,6 @@ const FEED_TYPE_ACTIVITY_POST_COMMENT = 7;
 const FEED_TYPE_ACTIVITY_ANNIVERSARY = 8;
 const FEED_TYPE_SITE_PROMOTION = 9;
 
-const POST_SOURCE_USER = 1;
-const POST_SOURCE_COMPANY = 2;
-const POST_SOURCE_HASHTAG = 3;
-
 function listInString(list, string) {
     for (let i = 0; i < list.length; i++) {
         if (string.indexOf(list[i]) > -1) {
@@ -21,22 +17,50 @@ function listInString(list, string) {
     return false;
 }
 
-function waitForElement(selector, callback, maxWaitTime = 10000) {
-    if (document.querySelector(selector)) {
-        callback();
-    } else {
-        if (maxWaitTime <= 0) {
-            console.log('Element not found: ' + selector);
-            return;
-        }
-        setTimeout(() => {
-            waitForElement(selector, callback, maxWaitTime - 100);
-        }, 100);
+function getFeedType(feed) {
+    let feedType = null;
+
+    // Check for different types of content
+    if (feed.querySelector('.feed-shared-job-card')) {
+        feedType = FEED_TYPE_JOB_POST;
+    } else if (feed.querySelector('.feed-shared-course-card')) {
+        feedType = FEED_TYPE_COURSE_POST;
+    } else if (feed.querySelector('.feed-shared-article, .feed-shared-external-article, .feed-shared-image, .feed-shared-video, .feed-shared-text')) {
+        feedType = FEED_TYPE_ACTIVITY_POST;
     }
+
+    // Check for reactions, comments, etc.
+    let updateHeader = feed.querySelector('.update-components-header__text-view');
+    if (updateHeader) {
+        let headerText = updateHeader.textContent.trim();
+        if (headerText.includes('likes this')) {
+            feedType = FEED_TYPE_ACTIVITY_POST_REACTION;
+        } else if (headerText.includes('commented on this')) {
+            feedType = FEED_TYPE_ACTIVITY_POST_COMMENT;
+        } else if (headerText.includes('shared')) {
+            feedType = FEED_TYPE_ACTIVITY_POST_SHARE;
+        }
+    }
+
+    // Check for shared posts
+    if (feed.querySelector('.feed-shared-reshared-content')) {
+        feedType = FEED_TYPE_ACTIVITY_POST_SHARE;
+    }
+
+    // Check for promoted content
+    if (feed.textContent.includes('Promoted')) {
+        feedType = FEED_TYPE_SITE_PROMOTION;
+    }
+
+    // If still null, set as general activity post
+    if (feedType === null) {
+        feedType = FEED_TYPE_ACTIVITY_POST;
+    }
+
+    return feedType;
 }
 
 function displayFeedInfo(feedInfoList) {
-    // Create or get the display container
     let displayContainer = document.getElementById('linkedin-feed-info');
     if (!displayContainer) {
         displayContainer = document.createElement('div');
@@ -52,18 +76,15 @@ function displayFeedInfo(feedInfoList) {
             max-height: 80vh;
             overflow-y: auto;
             width: 300px;
-            
         `;
         document.body.appendChild(displayContainer);
     }
 
-    // Count feed types
     let typeCounts = {};
-    feedInfoList.forEach(feedInfo => {
-        typeCounts[feedInfo.type] = (typeCounts[feedInfo.type] || 0) + 1;
+    feedInfoList.forEach(feedType => {
+        typeCounts[feedType] = (typeCounts[feedType] || 0) + 1;
     });
 
-    // Create the HTML content
     let html = `
         <style>
             #linkedin-feed-info, #linkedin-feed-info * {
@@ -77,25 +98,39 @@ function displayFeedInfo(feedInfoList) {
                 margin-bottom: 5px;
             }
         </style>
-        <form>
+        <form id="feed-type-form">
     `;
+
     html += `
-    </form>
-    <p>All ${feedInfoList.length}</p>
+        <p>All: ${feedInfoList.length}</p>
     `;
+    
     for (let type in typeCounts) {
         let typeName = getFeedTypeName(parseInt(type));
         html += `
-            <div>        
+            <div>
                 <input type="checkbox" id="type-${type}" name="type-${type}" checked>
                 <label for="type-${type}">${typeName}: ${typeCounts[type]}</label>
             </div>
         `;
     }
     
+    
 
-    // Update the display container
     displayContainer.innerHTML = html;
+
+    document.getElementById('feed-type-form').addEventListener('change', function(e) {
+        if (e.target.type === 'checkbox') {
+            let feedType = parseInt(e.target.id.split('-')[1]);
+            let feedItems = document.querySelectorAll('[data-id^="urn:li:activity"], [data-id^="urn:li:aggregate"]');
+            feedItems.forEach(item => {
+                let itemType = getFeedType(item);
+                if (itemType === feedType) {
+                    item.style.display = e.target.checked ? 'block' : 'none';
+                }
+            });
+        }
+    });
 }
 
 function getFeedTypeName(type) {
@@ -115,85 +150,24 @@ function getFeedTypeName(type) {
 
 function init() {
     console.log('init');
-    waitForElement('.feed-shared-update-v2', () => {
-        let feeds = document.querySelectorAll('.feed-shared-update-v2');
-        if (feeds.length === 0) {
-            console.log('No feed items found');
-            return;
-        }
-        console.log(`Found ${feeds.length} feed items`);
-        
-        let feedInfoList = [];
+    let feedItems = document.querySelectorAll('.feed-shared-update-v2, .occludable-update, .feed-shared-update-v2__content');
+    if (feedItems.length === 0) {
+        console.log('No feed items found');
+        return;
+    }
+    console.log(`Found ${feedItems.length} feed items`);
+    
+    let feedInfoList = [];
 
-        // Loop through all feed elements and check the type
-        feeds.forEach((feed, index) => {
-            let feedInfo = {
-                'source': null,
-                'type': null,
-            };
-
-            // Check for different types of content
-            if (feed.querySelector('.feed-shared-job-card')) {
-                feedInfo['type'] = FEED_TYPE_JOB_POST;
-            } else if (feed.querySelector('.feed-shared-course-card')) {
-                feedInfo['type'] = FEED_TYPE_COURSE_POST;
-            } else if (feed.querySelector('.feed-shared-article, .feed-shared-external-article, .feed-shared-image, .feed-shared-video, .feed-shared-text')) {
-                feedInfo['type'] = FEED_TYPE_ACTIVITY_POST;
-            }
-
-            // Check for reactions, comments, etc.
-            let updateHeader = feed.querySelector('.update-components-header__text-view');
-            if (updateHeader) {
-                let headerText = updateHeader.textContent.trim();
-                if (headerText.includes('likes this')) {
-                    feedInfo['type'] = FEED_TYPE_ACTIVITY_POST_REACTION;
-                } else if (headerText.includes('commented on this')) {
-                    feedInfo['type'] = FEED_TYPE_ACTIVITY_POST_COMMENT;
-                } else if (headerText.includes('shared')) {
-                    feedInfo['type'] = FEED_TYPE_ACTIVITY_POST_SHARE;
-                }
-            }
-
-            // Check for shared posts
-            if (feed.querySelector('.feed-shared-reshared-content')) {
-                feedInfo['type'] = FEED_TYPE_ACTIVITY_POST_SHARE;
-            }
-
-            // Determine the source
-            let actorName = feed.querySelector('.update-components-actor__name');
-            if (actorName) {
-                feedInfo['source'] = actorName.textContent.trim();
-            } else {
-                let headerLink = feed.querySelector('.update-components-header__text-view a');
-                if (headerLink) {
-                    feedInfo['source'] = headerLink.textContent.trim();
-                }
-            }
-
-            // Remove duplicated names
-            if (feedInfo['source']) {
-                feedInfo['source'] = feedInfo['source'].replace(/(.+)\1/, '$1');
-            }
-
-            // Check for promoted content
-            if (feed.textContent.includes('Promoted')) {
-                feedInfo['type'] = FEED_TYPE_SITE_PROMOTION;
-            }
-
-            // If still null, set as general activity post
-            if (feedInfo['type'] === null) {
-                feedInfo['type'] = FEED_TYPE_ACTIVITY_POST;
-            }
-
-            feedInfoList.push(feedInfo);
-            console.log(`Feed item ${index}:`, feedInfo);
-        });
-
-        // Display the feed info on the UI
-        displayFeedInfo(feedInfoList);
+    feedItems.forEach((feed, index) => {
+        console.log(`Analyzing feed item ${index}:`);
+        let feedType = getFeedType(feed);
+        feedInfoList.push(feedType);
+        console.log(`Feed item ${index} type:`, getFeedTypeName(feedType));
     });
-}
 
+    displayFeedInfo(feedInfoList);
+}
 // Run the init function when the page is fully loaded
 if (document.readyState === 'complete') {
     init();
@@ -202,4 +176,4 @@ if (document.readyState === 'complete') {
 }
 
 // Also run the init function periodically to catch dynamically loaded content
-setInterval(init, 5000);
+setInterval(init, 3000);
