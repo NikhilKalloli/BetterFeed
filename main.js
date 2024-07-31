@@ -153,21 +153,21 @@ function applyFilter() {
 }
 
 function init() {
-    console.log('init');
+    // console.log('init');
     let feedItems = document.querySelectorAll('.feed-shared-update-v2, .occludable-update, .feed-shared-update-v2__content');
     if (feedItems.length === 0) {
-        console.log('No feed items found');
+        // console.log('No feed items found');
         return;
     }
-    console.log(`Found ${feedItems.length} feed items`);
+    // console.log(`Found ${feedItems.length} feed items`);
     
     let feedInfoList = [];
 
     feedItems.forEach((feed, index) => {
-        console.log(`Analyzing feed item ${index}:`);
+        // console.log(`Analyzing feed item ${index}:`);
         let feedType = getFeedType(feed);
         feedInfoList.push(feedType);
-        console.log(`Feed item ${index} type:`, getFeedTypeName(feedType));
+        // console.log(`Feed item ${index} type:`, getFeedTypeName(feedType));
     });
 
     displayFeedInfo(feedInfoList);
