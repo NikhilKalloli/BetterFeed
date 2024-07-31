@@ -8,6 +8,8 @@ const FEED_TYPE_ACTIVITY_POST_COMMENT = 7;
 const FEED_TYPE_ACTIVITY_ANNIVERSARY = 8;
 const FEED_TYPE_SITE_PROMOTION = 9;
 
+let checkboxStates = {};
+
 function listInString(list, string) {
     for (let i = 0; i < list.length; i++) {
         if (string.indexOf(list[i]) > -1) {
@@ -107,28 +109,22 @@ function displayFeedInfo(feedInfoList) {
     
     for (let type in typeCounts) {
         let typeName = getFeedTypeName(parseInt(type));
+        checkboxStates[type] = checkboxStates[type] !== undefined ? checkboxStates[type] : true;
         html += `
             <div>
-                <input type="checkbox" id="type-${type}" name="type-${type}" checked>
+                <input type="checkbox" id="type-${type}" name="type-${type}" ${checkboxStates[type] ? 'checked' : ''}>
                 <label for="type-${type}">${typeName}: ${typeCounts[type]}</label>
             </div>
         `;
     }
     
-    
-
     displayContainer.innerHTML = html;
 
     document.getElementById('feed-type-form').addEventListener('change', function(e) {
         if (e.target.type === 'checkbox') {
             let feedType = parseInt(e.target.id.split('-')[1]);
-            let feedItems = document.querySelectorAll('[data-id^="urn:li:activity"], [data-id^="urn:li:aggregate"]');
-            feedItems.forEach(item => {
-                let itemType = getFeedType(item);
-                if (itemType === feedType) {
-                    item.style.display = e.target.checked ? 'block' : 'none';
-                }
-            });
+            checkboxStates[feedType] = e.target.checked;
+            applyFilter();
         }
     });
 }
@@ -146,6 +142,14 @@ function getFeedTypeName(type) {
         case FEED_TYPE_SITE_PROMOTION: return 'Promoted Content';
         default: return 'Unknown';
     }
+}
+
+function applyFilter() {
+    let feedItems = document.querySelectorAll('[data-id^="urn:li:activity"], [data-id^="urn:li:aggregate"]');
+    feedItems.forEach(item => {
+        let itemType = getFeedType(item);
+        item.style.display = checkboxStates[itemType] ? 'block' : 'none';
+    });
 }
 
 function init() {
@@ -167,7 +171,9 @@ function init() {
     });
 
     displayFeedInfo(feedInfoList);
+    applyFilter();
 }
+
 // Run the init function when the page is fully loaded
 if (document.readyState === 'complete') {
     init();
