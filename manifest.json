@@ -3,12 +3,13 @@
   "version": "1.0",
   "description": "LinkedIn Better Feed",
   "host_permissions": [
-    "https://www.linkedin.com/*"
+    "https://www.linkedin.com/feed/*"
   ],
   "content_scripts": [
     {
       "matches": [
-        "https://www.linkedin.com/feed/*"
+        "https://www.linkedin.com/feed/",
+        "https://www.linkedin.com/feed/?*"
       ],
       "run_at": "document_idle",
       "js": [
@@ -34,7 +35,7 @@
   "web_accessible_resources": [
     {
       "resources": ["/img/*"],
-      "matches": ["https://www.linkedin.com/*"]
+      "matches": ["https://*.linkedin.com/*"]
     }
   ]
 }
